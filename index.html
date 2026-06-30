@@ -115,6 +115,7 @@
     box-shadow:0 18px 40px -24px rgba(43,58,74,0.4), inset 0 0 0 1px rgba(255,255,255,0.6);
     padding:14px;
     position:relative;
+    touch-action:pan-y;
   }
 
   svg#board{
@@ -153,6 +154,13 @@
     stroke:#7c2f1a;
     stroke-width:1.4;
     cursor:grab;
+    touch-action:none;
+  }
+  .hit-area{
+    fill:transparent;
+    stroke:none;
+    cursor:grab;
+    touch-action:none;
   }
   .float-piece.dragging{
     cursor:grabbing;
@@ -386,12 +394,27 @@ let pieces = {};
 
 names.forEach(name=>{
   const s = DATA.shapes[name];
+  const g = document.createElementNS(NS,'g');
+  g.setAttribute('data-name', name);
+
+  const pad = Math.max(s.bw, s.bh) * 0.25 + 10; // generous touch target
+  const hit = document.createElementNS(NS,'rect');
+  hit.setAttribute('x', s.cx - s.bw/2 - pad);
+  hit.setAttribute('y', s.cy - s.bh/2 - pad);
+  hit.setAttribute('width', s.bw + pad*2);
+  hit.setAttribute('height', s.bh + pad*2);
+  hit.setAttribute('class','hit-area');
+  hit.setAttribute('data-name', name);
+  g.appendChild(hit);
+
   const path = document.createElementNS(NS,'path');
   path.setAttribute('d', s.path);
   path.setAttribute('class','float-piece');
   path.setAttribute('data-name', name);
-  floatGroup.appendChild(path);
-  pieces[name] = { el: path, placed:false, tx:0, ty:0, scale:SCALE, homeTx:0, homeTy:0 };
+  g.appendChild(path);
+
+  floatGroup.appendChild(g);
+  pieces[name] = { el: g, pathEl: path, hitEl: hit, placed:false, tx:0, ty:0, scale:SCALE, homeTx:0, homeTy:0 };
 });
 
 // shelf-pack the tray, return bottom-most y used
@@ -467,10 +490,10 @@ function onPointerDown(evt){
 
   evt.preventDefault();
   const svgPt = getSvgPoint(evt);
-  dragState = { name, startPtX: svgPt.x, startPtY: svgPt.y, startTx: p.tx, startTy: p.ty };
-  p.el.classList.add('dragging');
+  dragState = { name, startPtX: svgPt.x, startPtY: svgPt.y, startTx: p.tx, startTy: p.ty, pointerId: evt.pointerId };
+  p.pathEl.classList.add('dragging');
   floatGroup.appendChild(p.el);
-  p.el.setPointerCapture && p.el.setPointerCapture(evt.pointerId);
+  try{ evt.target.setPointerCapture(evt.pointerId); }catch(e){}
 }
 
 function onPointerMove(evt){
@@ -489,7 +512,7 @@ function onPointerUp(evt){
   if(!dragState) return;
   const name = dragState.name;
   const p = pieces[name];
-  p.el.classList.remove('dragging');
+  p.pathEl.classList.remove('dragging');
 
   const s = DATA.shapes[name];
   const curCx = p.tx + p.scale * s.cx;
@@ -504,9 +527,10 @@ function onPointerUp(evt){
     p.tx = MAP_OFFSET_X;
     p.ty = MAP_OFFSET_Y;
     renderPiece(name);
-    p.el.classList.remove('float-piece');
-    p.el.classList.add('placed-piece');
-    p.el.style.cursor = 'default';
+    p.pathEl.classList.remove('float-piece');
+    p.pathEl.classList.add('placed-piece');
+    p.pathEl.style.cursor = 'default';
+    p.hitEl.style.display = 'none';
     p.placed = true;
     placedGroup.appendChild(p.el);
 
@@ -527,8 +551,8 @@ function onPointerUp(evt){
     p.tx = p.homeTx;
     p.ty = p.homeTy;
     renderPiece(name);
-    p.el.classList.add('wrong');
-    setTimeout(()=>p.el.classList.remove('wrong'), 320);
+    p.pathEl.classList.add('wrong');
+    setTimeout(()=>p.pathEl.classList.remove('wrong'), 320);
     missCount++;
     document.getElementById('missCount').textContent = missCount;
   }
@@ -569,9 +593,10 @@ function resetGame(){
   names.forEach(name=>{
     const p = pieces[name];
     p.placed = false;
-    p.el.classList.remove('placed-piece');
-    p.el.classList.add('float-piece');
-    p.el.style.cursor = 'grab';
+    p.pathEl.classList.remove('placed-piece');
+    p.pathEl.classList.add('float-piece');
+    p.pathEl.style.cursor = 'grab';
+    p.hitEl.style.display = '';
     floatGroup.appendChild(p.el);
   });
   layoutAndRender();
