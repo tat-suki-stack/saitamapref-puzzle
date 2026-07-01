@@ -115,14 +115,14 @@
     box-shadow:0 18px 40px -24px rgba(43,58,74,0.4), inset 0 0 0 1px rgba(255,255,255,0.6);
     padding:14px;
     position:relative;
-    touch-action:pan-y;
+    touch-action:auto;
   }
 
   svg#board{
     width:100%;
     height:auto;
     display:block;
-    touch-action:none;
+    touch-action:auto;
   }
 
   .seal{
@@ -154,13 +154,13 @@
     stroke:#7c2f1a;
     stroke-width:1.4;
     cursor:grab;
-    touch-action:none;
+    touch-action:pan-x pan-y pinch-zoom;
   }
   .hit-area{
     fill:transparent;
     stroke:none;
     cursor:grab;
-    touch-action:none;
+    touch-action:pan-x pan-y pinch-zoom;
   }
   .float-piece.dragging{
     cursor:grabbing;
@@ -505,6 +505,7 @@ function onPointerDown(evt){
   const svgPt = getSvgPoint(evt);
   dragState = { name, startPtX: svgPt.x, startPtY: svgPt.y, startTx: p.tx, startTy: p.ty, pointerId: evt.pointerId };
   p.pathEl.classList.add('dragging');
+  p.el.style.touchAction = 'none';
   floatGroup.appendChild(p.el);
   try{ evt.target.setPointerCapture(evt.pointerId); }catch(e){}
 }
@@ -526,6 +527,7 @@ function onPointerUp(evt){
   const name = dragState.name;
   const p = pieces[name];
   p.pathEl.classList.remove('dragging');
+  p.el.style.touchAction = '';
 
   const s = DATA.shapes[name];
   const curCx = p.tx + p.scale * s.cx;
