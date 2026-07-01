@@ -186,13 +186,25 @@
     font-size:15px;
   }
 
-  .name-tag{
+  .name-tag{ display:none; } /* 未使用 */
+
+  /* ツールチップ */
+  .tooltip{
+    position:fixed;
+    background:var(--indigo);
+    color:#fffdf6;
     font-family:'Zen Maru Gothic', sans-serif;
-    font-size:11px;
-    fill:#fffdf6;
+    font-size:13px;
+    padding:5px 12px;
+    border-radius:6px;
     pointer-events:none;
-    text-anchor:middle;
+    opacity:0;
+    transition:opacity .15s;
+    z-index:200;
+    white-space:nowrap;
+    box-shadow:0 4px 12px rgba(0,0,0,0.25);
   }
+  .tooltip.show{ opacity:1; }
 
   .toast{
     position:fixed;
@@ -285,12 +297,13 @@
 
 <div class="stage">
   <svg id="board" xmlns="http://www.w3.org/2000/svg"></svg>
-  <div class="seal">埼玉県 サンマップ</div>
+
 </div>
 
 <footer>地形データ：国土数値情報（国土交通省）／加工：smartnews-smri/japan-topography の公開データを簡略化して使用</footer>
 
 <div class="toast" id="toast"></div>
+<div class="tooltip" id="tooltip"></div>
 
 <div class="complete-overlay" id="completeOverlay">
   <div class="complete-card">
@@ -312,7 +325,7 @@ const MAP_OFFSET_X = 12;
 const MAP_OFFSET_Y = 12;
 const VB_W = MW + MAP_OFFSET_X * 2;
 
-const TRAY_TOP = MH + MAP_OFFSET_Y + 26;   // y where tray begins (below divider + label)
+const TRAY_TOP = MH + MAP_OFFSET_Y + 60;   // y where tray begins (label + 2行分の余白)
 const TRAY_PAD = 8;
 const SCALE = 0.62;
 
@@ -534,13 +547,8 @@ function onPointerUp(evt){
     p.placed = true;
     placedGroup.appendChild(p.el);
 
-    const tag = document.createElementNS(NS,'text');
-    tag.setAttribute('x', s.cx);
-    tag.setAttribute('y', s.cy);
-    tag.setAttribute('transform', `translate(${MAP_OFFSET_X},${MAP_OFFSET_Y})`);
-    tag.setAttribute('class','name-tag');
-    tag.textContent = name;
-    placedGroup.appendChild(tag);
+    p.pathEl.setAttribute('data-placed-name', name);
+    p.pathEl.style.cursor = 'pointer';
 
     placedCount++;
     document.getElementById('placedCount').textContent = placedCount;
@@ -604,6 +612,44 @@ function resetGame(){
 
 document.getElementById('resetBtn').addEventListener('click', resetGame);
 document.getElementById('playAgainBtn').addEventListener('click', resetGame);
+
+// ---- tooltip for placed pieces ----
+const tooltip = document.getElementById('tooltip');
+let tooltipTimer = null;
+
+function showTooltip(name, x, y){
+  tooltip.textContent = name;
+  tooltip.style.left = (x + 12) + 'px';
+  tooltip.style.top  = (y - 28) + 'px';
+  tooltip.classList.add('show');
+}
+function hideTooltip(){
+  tooltip.classList.remove('show');
+}
+
+board.addEventListener('pointermove', evt => {
+  if(dragState) return;
+  const el = evt.target;
+  const name = el.getAttribute && el.getAttribute('data-placed-name');
+  if(name){
+    showTooltip(name, evt.clientX, evt.clientY);
+  } else {
+    hideTooltip();
+  }
+});
+board.addEventListener('pointerleave', hideTooltip);
+
+// タッチ: placed pieceをタップしたら一時表示
+board.addEventListener('click', evt => {
+  if(dragState) return;
+  const el = evt.target;
+  const name = el.getAttribute && el.getAttribute('data-placed-name');
+  if(name){
+    showTooltip(name, evt.clientX, evt.clientY);
+    clearTimeout(tooltipTimer);
+    tooltipTimer = setTimeout(hideTooltip, 1800);
+  }
+});
 </script>
 </body>
 </html>
