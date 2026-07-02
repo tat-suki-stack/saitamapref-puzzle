@@ -117,6 +117,14 @@
     position:relative;
     touch-action:auto;
   }
+  .stage, .stage *{
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    user-select:none;
+    -webkit-user-drag:none;
+    -webkit-tap-highlight-color:transparent;
+  }
 
   svg#board{
     width:100%;
@@ -157,13 +165,13 @@
     stroke:#7c2f1a;
     stroke-width:1.4;
     cursor:grab;
-    touch-action:pan-x pan-y pinch-zoom;
+    touch-action:manipulation;
   }
   .hit-area{
     fill:transparent;
     stroke:none;
     cursor:grab;
-    touch-action:pan-x pan-y pinch-zoom;
+    touch-action:manipulation;
   }
   .float-piece.dragging{
     cursor:grabbing;
@@ -678,6 +686,7 @@ function onPointerUp(evt){
 }
 
 board.addEventListener('pointerdown', onPointerDown);
+board.addEventListener('contextmenu', evt => evt.preventDefault());
 window.addEventListener('pointermove', onPointerMove);
 window.addEventListener('pointerup', onPointerUp);
 window.addEventListener('pointercancel', onPointerUp);
