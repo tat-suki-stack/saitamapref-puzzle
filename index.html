@@ -687,6 +687,16 @@ function onPointerUp(evt){
 
 board.addEventListener('pointerdown', onPointerDown);
 board.addEventListener('contextmenu', evt => evt.preventDefault());
+
+// iOS Safari: -webkit-touch-callout だけではSVG図形の長押しメニュー
+// （コピー/調べる/翻訳）を防げないことがあるため、touchstart自体を
+// 明示的にキャンセルする（passive:false が必須）。
+board.addEventListener('touchstart', evt => {
+  const name = evt.target && evt.target.getAttribute && evt.target.getAttribute('data-name');
+  if(name){
+    evt.preventDefault();
+  }
+}, { passive: false });
 window.addEventListener('pointermove', onPointerMove);
 window.addEventListener('pointerup', onPointerUp);
 window.addEventListener('pointercancel', onPointerUp);
